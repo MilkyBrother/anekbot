@@ -48,7 +48,7 @@ def insert_userid_to_usersdb(user_id: int):
     conn.close()
 
 
-def insert_anekid_to_userdb(user_id: int, anek_id: int):
+def insert_anekid_to_usersdb(user_id: int, anek_id: int):
     insert_data_query = '''
         UPDATE users
         SET anek_id =
@@ -65,6 +65,17 @@ def insert_anekid_to_userdb(user_id: int, anek_id: int):
     conn.close()
 
 
+def get_anek_ids_from_usersbd(user_id):
+    get_data_query = f'SELECT anek_id FROM users WHERE user_id = {user_id}'
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(get_data_query, (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    anek_ids = result[0].split(', ')
+    return anek_ids
+
+
 @bot.message_handler(commands=['start'])
 def start_message(message):
     markup = create_inline_keyboard()
@@ -74,7 +85,7 @@ def start_message(message):
     user_id = message.chat.id
     create_database_users()
     insert_userid_to_usersdb(user_id)
-    insert_anekid_to_userdb(user_id=user_id, anek_id=anek_id)
+    insert_anekid_to_usersdb(user_id=user_id, anek_id=anek_id)
     bot.send_message(message.chat.id, anek_text, reply_markup=markup)
 
 
@@ -86,7 +97,7 @@ def callback_handler(call):
         anek_id = anek[0]
         anek_text = anek[1]
         user_id = call.message.chat.id
-        insert_anekid_to_userdb(user_id=user_id, anek_id=anek_id)
+        insert_anekid_to_usersdb(user_id=user_id, anek_id=anek_id)
         bot.send_message(call.message.chat.id, anek_text, reply_markup=markup)
 
 
