@@ -16,17 +16,66 @@ def create_inline_keyboard():
 def get_random_anek():
     conn = sqlite3.connect('aneki.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT text FROM aneki ORDER BY RANDOM() LIMIT 1")
-    joke = cursor.fetchone()
+    cursor.execute("SELECT id, text FROM aneki ORDER BY RANDOM() LIMIT 1")
+    anek = cursor.fetchone()
     conn.close()
-    return joke[0] if joke else "Извините, но у меня нет шуток сегодня."
+    return anek if anek else "Извините, но у меня нет шуток сегодня."
+
+
+def create_database_users():
+    create_table_query = '''
+           CREATE TABLE IF NOT EXISTS users (
+               user_id INTEGER UNIQUE,
+               anek_id INTEGER
+           )
+    '''
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(create_table_query)
+    conn.commit()
+    conn.close()
+
+
+def insert_userid_to_usersdb(user_id: int):
+    insert_data_query = '''
+            INSERT OR IGNORE INTO users (user_id)
+            VALUES (?)    
+    '''
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(insert_data_query, (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def insert_anekid_to_userdb(user_id: int, anek_id: int):
+    insert_data_query = '''
+        UPDATE users
+        SET anek_id =
+            CASE
+                WHEN anek_id IS NULL OR anek_id = '' THEN ?
+                ELSE anek_id || ', ' || ?
+            END
+        WHERE user_id = ? 
+    '''
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(insert_data_query, (anek_id, anek_id, user_id))
+    conn.commit()
+    conn.close()
 
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
     markup = create_inline_keyboard()
     anek = get_random_anek()
-    bot.send_message(message.chat.id, anek, reply_markup=markup)
+    anek_id = anek[0]
+    anek_text = anek[1]
+    user_id = message.chat.id
+    create_database_users()
+    insert_userid_to_usersdb(user_id)
+    insert_anekid_to_userdb(user_id=user_id, anek_id=anek_id)
+    bot.send_message(message.chat.id, anek_text, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -34,7 +83,11 @@ def callback_handler(call):
     if call.data == 'button1':
         markup = create_inline_keyboard()
         anek = get_random_anek()
-        bot.send_message(call.message.chat.id, anek, reply_markup=markup)
+        anek_id = anek[0]
+        anek_text = anek[1]
+        user_id = call.message.chat.id
+        insert_anekid_to_userdb(user_id=user_id, anek_id=anek_id)
+        bot.send_message(call.message.chat.id, anek_text, reply_markup=markup)
 
 
 bot.infinity_polling()
