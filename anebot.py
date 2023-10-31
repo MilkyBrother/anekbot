@@ -19,7 +19,39 @@ def get_random_anek():
     cursor.execute("SELECT id, text FROM aneki ORDER BY RANDOM() LIMIT 1")
     anek = cursor.fetchone()
     conn.close()
-    return anek if anek else "Извините, но у меня нет шуток сегодня."
+    return anek if anek else 'Извините, но у меня нет шуток сегодня.'
+
+
+def get_unique_anek(user_id: int):
+    anek_ids = get_anek_ids_from_usersdb(user_id=user_id)
+    anek_ids = ','.join(map(str, anek_ids))
+    get_unique_anek_query = f'SELECT id, text FROM aneki WHERE id NOT IN ({anek_ids}) ORDER BY RANDOM() LIMIT 1'
+    conn = sqlite3.connect('aneki.db')
+    cursor = conn.cursor()
+    cursor.execute(get_unique_anek_query)
+    anek = cursor.fetchone()
+    conn.close()
+    if anek is not None:
+        insert_anekid_to_usersdb(user_id=user_id, anek_id=anek[0])
+        return anek[1]
+    else:
+        return 'К сожалению запасы моих анекдотов иссякли((('
+
+
+def get_anek_ids_from_usersdb(user_id):
+    get_data_query = f'SELECT anek_id FROM users WHERE user_id = ?'
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(get_data_query, (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    if result[0] is str:
+        anek_ids = result[0].split(',')
+        anek_ids = [int(anek_id) for anek_id in anek_ids]
+    else:
+        anek_ids = [result[0]]
+
+    return anek_ids
 
 
 def create_database_users():
@@ -65,17 +97,6 @@ def insert_anekid_to_usersdb(user_id: int, anek_id: int):
     conn.close()
 
 
-def get_anek_ids_from_usersbd(user_id):
-    get_data_query = f'SELECT anek_id FROM users WHERE user_id = {user_id}'
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute(get_data_query, (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-    anek_ids = result[0].split(', ')
-    return anek_ids
-
-
 @bot.message_handler(commands=['start'])
 def start_message(message):
     markup = create_inline_keyboard()
@@ -93,11 +114,8 @@ def start_message(message):
 def callback_handler(call):
     if call.data == 'button1':
         markup = create_inline_keyboard()
-        anek = get_random_anek()
-        anek_id = anek[0]
-        anek_text = anek[1]
         user_id = call.message.chat.id
-        insert_anekid_to_usersdb(user_id=user_id, anek_id=anek_id)
+        anek_text = get_unique_anek(user_id=user_id)
         bot.send_message(call.message.chat.id, anek_text, reply_markup=markup)
 
 
