@@ -1,4 +1,4 @@
-settings.py
+.env
 aneki.db
 users.db
 venv/
