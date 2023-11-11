@@ -1,9 +1,9 @@
 import sqlite3
-import telebot
-from telebot import types
-from settings import TOKEN
+from telebot import TeleBot, types
+from decouple import config
 
-bot = telebot.TeleBot(TOKEN)
+TOKEN = config('TOKEN')
+bot = TeleBot(TOKEN)
 
 
 def create_inline_keyboard():
