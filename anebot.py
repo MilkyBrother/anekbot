@@ -108,6 +108,10 @@ def start_message(message):
     create_database_users()
     insert_userid_to_usersdb(user_id)
     anek_text = get_unique_anek(user_id=user_id)
+    try:
+        bot.edit_message_reply_markup(message.chat.id, message_id=message.message_id - 1, reply_markup=None)
+    except:
+        pass
     bot.send_message(message.chat.id, anek_text, reply_markup=markup)
 
 
@@ -117,6 +121,7 @@ def callback_handler(call):
         markup = create_inline_keyboard()
         user_id = call.message.chat.id
         anek_text = get_unique_anek(user_id=user_id)
+        bot.edit_message_reply_markup(call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
         bot.send_message(call.message.chat.id, anek_text, reply_markup=markup)
 
 
