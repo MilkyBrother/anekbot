@@ -1,5 +1,5 @@
 import requests
-import sqlite3
+import database_api as db
 from bs4 import BeautifulSoup as bs
 
 
@@ -22,32 +22,16 @@ class AnekdotruParser:
             return None
 
     @staticmethod
-    def _parse_data(html):
+    def _parse_data(html) -> list:
         site_soup = bs(html, 'html.parser')
         parsed_data = []
         for anek in site_soup.find_all('div', class_='text'):
             parsed_data.append(anek.text)
         return parsed_data
 
-    def _process_data(self, parsed_data):
-        create_table_query = '''
-                CREATE TABLE IF NOT EXISTS aneki (
-                    id INTEGER PRIMARY KEY,
-                    text TEXT UNIQUE
-                )
-            '''
-        insert_data_query = '''
-                INSERT OR IGNORE INTO aneki (text)
-                VALUES (?)
-            '''
-        conn = sqlite3.connect(self.data_base)
-        cursor = conn.cursor()
-        cursor.execute(create_table_query)
-        conn.commit()
-        for anek in parsed_data:
-            cursor.execute(insert_data_query, (anek,))
-            conn.commit()
-        conn.close()
+    @staticmethod
+    def _process_data(parsed_data):
+        db.insert_aneks_to_akekidb(data=parsed_data)
 
     def run(self):
         page_content = self._load_page(url=self.base_url)
