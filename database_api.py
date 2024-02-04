@@ -1,7 +1,10 @@
 import sqlite3
+from os import path
 
 
 def get_unique_anek(user_id: int) -> str:
+    """Достаёт ранее не выдававшийся анекдот из aneki.db для пользователся по user_id"""
+
     anek_ids = get_anek_ids_from_usersdb(user_id=user_id)
     if anek_ids[0] is not None:
         anek_ids = ','.join(map(str, anek_ids))
@@ -31,6 +34,8 @@ def get_unique_anek(user_id: int) -> str:
 
 
 def get_anek_ids_from_usersdb(user_id: int) -> list:
+    """Достаёт список id выданных анекдотов для пользователя по user_id"""
+
     get_data_query = f'SELECT anek_id FROM users WHERE user_id = ?'
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -47,6 +52,8 @@ def get_anek_ids_from_usersdb(user_id: int) -> list:
 
 
 def create_database_users():
+    """Создаёт БД users.db если она ещё не была создана"""
+
     create_table_query = '''
            CREATE TABLE IF NOT EXISTS users (
                user_id INTEGER UNIQUE,
@@ -60,7 +67,25 @@ def create_database_users():
     conn.close()
 
 
+def create_database_aneki():
+    """Создаёт БД aneki.db там хранятся анекдоты"""
+
+    create_table_query = '''
+                    CREATE TABLE IF NOT EXISTS aneki (
+                        id INTEGER PRIMARY KEY,
+                        text TEXT UNIQUE
+                    )
+                '''
+    conn = sqlite3.connect('aneki.db')
+    cursor = conn.cursor()
+    cursor.execute(create_table_query)
+    conn.commit()
+    conn.close()
+
+
 def insert_userid_to_usersdb(user_id: int):
+    """Добавляет нового пользователя в users.db"""
+
     insert_data_query = '''
             INSERT OR IGNORE INTO users (user_id)
             VALUES (?)    
@@ -73,6 +98,8 @@ def insert_userid_to_usersdb(user_id: int):
 
 
 def insert_anekid_to_usersdb(user_id: int, anek_id: int):
+    """Добавляет id выданного анекдота в список выданных анекдотов для пользователя по user_id"""
+
     insert_data_query = '''
         UPDATE users
         SET anek_id =
@@ -90,20 +117,16 @@ def insert_anekid_to_usersdb(user_id: int, anek_id: int):
 
 
 def insert_aneks_to_akekidb(data: list):
-    create_table_query = '''
-                    CREATE TABLE IF NOT EXISTS aneki (
-                        id INTEGER PRIMARY KEY,
-                        text TEXT UNIQUE
-                    )
-                '''
+    """Добавляет список анекдотов в БД aneki.db"""
+
     insert_data_query = '''
                     INSERT OR IGNORE INTO aneki (text)
                     VALUES (?)
                 '''
+    if not path.exists('aneki.db'):
+        create_database_aneki()
     conn = sqlite3.connect('aneki.db')
     cursor = conn.cursor()
-    cursor.execute(create_table_query)
-    conn.commit()
     anek_count = 0
     for anek in data:
         cursor.execute(insert_data_query, (anek,))
