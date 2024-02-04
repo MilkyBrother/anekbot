@@ -1,6 +1,7 @@
 from telebot import TeleBot, types
 from decouple import config
 import database_api as db
+from os import path
 
 TOKEN = config('TOKEN')
 bot = TeleBot(TOKEN)
@@ -17,7 +18,8 @@ def create_inline_keyboard() -> types.InlineKeyboardMarkup():
 def start_message(message):
     markup = create_inline_keyboard()
     user_id = message.chat.id
-    db.create_database_users()
+    if not path.exists('users.db'):
+        db.create_database_users()
     db.insert_userid_to_usersdb(user_id)
     anek_text = db.get_unique_anek(user_id=user_id)
     try:
